@@ -1,0 +1,647 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: capsule-recording-rules
+  namespace: monitoring
+  labels:
+    app: capsule
+    role: recording-rules
+spec:
+  groups:
+    - name: capsule.admission
+      interval: 60s
+      rules:
+        - record: capsule:admission:rate5m
+          expr: rate(capsule_create_events_total[5m])
+        - record: capsule:admission:error_rate5m
+          expr: rate(capsule_create_events_total{event="create_failed"}[5m])
+        - record: capsule:admission:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_create_latency_seconds_bucket[5m]))
+        - record: capsule:admission:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_create_latency_seconds_bucket[5m]))
+        - record: capsule:admission:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_create_latency_seconds_bucket[5m]))
+
+    - name: capsule.credentials
+      interval: 60s
+      rules:
+        - record: capsule:credential:issued:rate5m
+          expr: rate(capsule_credential_issued_total[5m])
+        - record: capsule:credential:denied:rate5m
+          expr: rate(capsule_credential_denied_total[5m])
+        - record: capsule:credential:refreshed:rate5m
+          expr: rate(capsule_credential_refreshed_total[5m])
+        - record: capsule:credential:revoked:rate5m
+          expr: rate(capsule_credential_revoked_total[5m])
+
+    - name: capsule.lifecycle
+      interval: 60s
+      rules:
+        - record: capsule:boot:rate5m
+          expr: rate(capsule_boot_events_total[5m])
+        - record: capsule:prepare:rate5m
+          expr: rate(capsule_prepare_events_total[5m])
+        - record: capsule:destroy:rate5m
+          expr: rate(capsule_destroy_events_total[5m])
+        - record: capsule:fork:rate5m
+          expr: rate(capsule_fork_events_total[5m])
+        - record: capsule:exec:rate5m
+          expr: rate(capsule_exec_events_total[5m])
+        - record: capsule:quiesce:rate5m
+          expr: rate(capsule_quiesce_events_total[5m])
+        - record: capsule:boot:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_boot_latency_seconds_bucket[5m]))
+        - record: capsule:boot:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_boot_latency_seconds_bucket[5m]))
+        - record: capsule:boot:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_boot_latency_seconds_bucket[5m]))
+        - record: capsule:prepare:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_prepare_latency_seconds_bucket[5m]))
+        - record: capsule:prepare:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_prepare_latency_seconds_bucket[5m]))
+        - record: capsule:prepare:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_prepare_latency_seconds_bucket[5m]))
+        - record: capsule:fork:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_fork_latency_seconds_bucket[5m]))
+        - record: capsule:fork:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_fork_latency_seconds_bucket[5m]))
+        - record: capsule:fork:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_fork_latency_seconds_bucket[5m]))
+        - record: capsule:destroy:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_destroy_latency_seconds_bucket[5m]))
+        - record: capsule:destroy:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_destroy_latency_seconds_bucket[5m]))
+        - record: capsule:destroy:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_destroy_latency_seconds_bucket[5m]))
+        - record: capsule:exec:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_exec_duration_seconds_bucket[5m]))
+        - record: capsule:exec:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_exec_duration_seconds_bucket[5m]))
+        - record: capsule:exec:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_exec_duration_seconds_bucket[5m]))
+
+    - name: capsule.placement
+      interval: 60s
+      rules:
+        - record: capsule:placement:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_placement_latency_seconds_bucket[5m]))
+        - record: capsule:placement:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_placement_latency_seconds_bucket[5m]))
+        - record: capsule:placement:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_placement_latency_seconds_bucket[5m]))
+        - record: capsule:placement:efficiency:ratio5m
+          expr: |
+            sum(rate(capsule_placement_hosts_passed_constraints_sum[5m]))
+              /
+            sum(rate(capsule_placement_hosts_evaluated_sum[5m]))
+
+    - name: capsule.runtime
+      interval: 60s
+      rules:
+        - record: capsule:suspend:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_suspend_latency_seconds_bucket[5m]))
+        - record: capsule:suspend:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_suspend_latency_seconds_bucket[5m]))
+        - record: capsule:suspend:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_suspend_latency_seconds_bucket[5m]))
+        - record: capsule:resume:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_resume_latency_seconds_bucket[5m]))
+        - record: capsule:resume:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_resume_latency_seconds_bucket[5m]))
+        - record: capsule:resume:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_resume_latency_seconds_bucket[5m]))
+        - record: capsule:restore:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_restore_latency_seconds_bucket[5m]))
+        - record: capsule:restore:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_restore_latency_seconds_bucket[5m]))
+        - record: capsule:restore:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_restore_latency_seconds_bucket[5m]))
+        - record: capsule:restore:latency:p50:by_type_tier:rate5m
+          expr: histogram_quantile(0.50, sum by (le, snapshot_type, cache_tier) (rate(capsule_restore_latency_seconds_bucket[5m])))
+        - record: capsule:restore:latency:p95:by_type_tier:rate5m
+          expr: histogram_quantile(0.95, sum by (le, snapshot_type, cache_tier) (rate(capsule_restore_latency_seconds_bucket[5m])))
+        - record: capsule:restore:latency:p99:by_type_tier:rate5m
+          expr: histogram_quantile(0.99, sum by (le, snapshot_type, cache_tier) (rate(capsule_restore_latency_seconds_bucket[5m])))
+        - record: capsule:quiesce:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_quiesce_duration_seconds_bucket[5m]))
+        - record: capsule:quiesce:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_quiesce_duration_seconds_bucket[5m]))
+        - record: capsule:quiesce:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_quiesce_duration_seconds_bucket[5m]))
+
+    - name: capsule.cache
+      interval: 60s
+      rules:
+        - record: capsule:snapshot:cache:hit_rate:ratio5m
+          expr: |
+            sum(rate(capsule_snapshot_cache_hits[5m]))
+              /
+            (sum(rate(capsule_snapshot_cache_hits[5m])) + sum(rate(capsule_snapshot_cache_misses[5m])))
+        - record: capsule:snapshot:cache:misses:rate5m
+          expr: rate(capsule_snapshot_cache_misses[5m])
+        - record: capsule:snapshot:eviction:count:rate5m
+          expr: rate(capsule_snapshot_eviction_count[5m])
+        - record: capsule:snapshot:eviction:bytes:rate5m
+          expr: rate(capsule_snapshot_eviction_bytes[5m])
+
+    - name: capsule.gc
+      interval: 60s
+      rules:
+        - record: capsule:gc:orphans_detected:rate5m
+          expr: rate(capsule_gc_orphans_detected[5m])
+        - record: capsule:gc:resources_removed:rate5m
+          expr: rate(capsule_gc_resources_removed[5m])
+        - record: capsule:gc:review_required:rate5m
+          expr: rate(capsule_gc_review_required[5m])
+        - record: capsule:gc:cleanup_failed:rate5m
+          expr: rate(capsule_gc_cleanup_failed[5m])
+        - record: capsule:gc:pass_duration:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_gc_pass_duration_seconds_bucket[5m]))
+        - record: capsule:gc:pass_duration:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_gc_pass_duration_seconds_bucket[5m]))
+        - record: capsule:gc:pass_duration:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_gc_pass_duration_seconds_bucket[5m]))
+
+    - name: capsule.cgroup
+      interval: 60s
+      rules:
+        - record: capsule:cgroup:oom:rate5m
+          expr: rate(capsule_cgroup_oom_events_total[5m])
+        - record: capsule:cgroup:memory_high:rate5m
+          expr: rate(capsule_cgroup_memory_high_events_total[5m])
+        - record: capsule:cgroup:cpu_throttled:rate5m
+          expr: rate(capsule_cgroup_cpu_throttled_total[5m])
+        - record: capsule:cgroup:setup_errors:rate5m
+          expr: rate(capsule_cgroup_setup_errors_total[5m])
+
+    - name: capsule.network
+      interval: 60s
+      rules:
+        - record: capsule:network:setup:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(network_setup_duration_seconds_bucket[5m]))
+        - record: capsule:network:setup:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(network_setup_duration_seconds_bucket[5m]))
+        - record: capsule:network:setup:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(network_setup_duration_seconds_bucket[5m]))
+        - record: capsule:network:setup:rate5m
+          expr: rate(network_setup_completed[5m])
+
+    - name: capsule.dns
+      interval: 60s
+      rules:
+        - record: capsule:dns:cache:hit_rate:ratio5m
+          expr: |
+            sum(rate(network_dns_cache_hits[5m]))
+              /
+            (sum(rate(network_dns_cache_hits[5m])) + sum(rate(network_dns_cache_misses[5m])))
+        - record: capsule:dns:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(network_dns_resolution_duration_seconds_bucket[5m]))
+        - record: capsule:dns:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(network_dns_resolution_duration_seconds_bucket[5m]))
+        - record: capsule:dns:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(network_dns_resolution_duration_seconds_bucket[5m]))
+
+    - name: capsule.audit
+      interval: 60s
+      rules:
+        - record: capsule:audit:delivery:rate5m
+          expr: rate(capsule_audit_delivery_count[5m])
+        - record: capsule:audit:lag:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_audit_delivery_lag_bucket[5m]))
+        - record: capsule:audit:lag:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_audit_delivery_lag_bucket[5m]))
+
+    - name: capsule.slo
+      interval: 30s
+      rules:
+        - record: capsule:slo:availability_target
+          expr: |
+            label_replace(vector(0.995), "slo", "create", "", "")
+            or label_replace(vector(0.995), "slo", "boot", "", "")
+            or label_replace(vector(0.999), "slo", "exec", "", "")
+            or label_replace(vector(0.999), "slo", "destroy", "", "")
+            or label_replace(vector(0.995), "slo", "suspend", "", "")
+            or label_replace(vector(0.995), "slo", "resume", "", "")
+            or label_replace(vector(0.995), "slo", "fork", "", "")
+            or label_replace(vector(0.995), "slo", "restore", "", "")
+            or label_replace(vector(0.9999), "slo", "audit", "", "")
+        - record: capsule:slo:bad:rate5m
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event="create_failed"}[5m])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event="boot_not_ready"}[5m])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"failed|timed_out|not_completed"}[5m])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event="destroy_failed"}[5m])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_failed|suspend_timed_out"}[5m])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_failed|resume_timed_out"}[5m])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event="fork_failed"}[5m])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_failed|restore_partial_cleanup"}[5m])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"dead_letter|dropped"}[5m])), "slo", "audit", "", "")
+        - record: capsule:slo:valid:rate5m
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event=~"create_completed|create_failed"}[5m])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event=~"boot_ready|boot_not_ready"}[5m])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"succeeded|failed|timed_out|not_completed"}[5m])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event=~"destroy_completed|destroy_failed"}[5m])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_completed|suspend_failed|suspend_timed_out"}[5m])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_completed|resume_failed|resume_timed_out"}[5m])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event=~"fork_completed|fork_failed"}[5m])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_completed|restore_failed|restore_partial_cleanup"}[5m])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"delivered|dead_letter|dropped"}[5m])), "slo", "audit", "", "")
+        - record: capsule:slo:bad:rate30m
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event="create_failed"}[30m])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event="boot_not_ready"}[30m])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"failed|timed_out|not_completed"}[30m])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event="destroy_failed"}[30m])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_failed|suspend_timed_out"}[30m])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_failed|resume_timed_out"}[30m])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event="fork_failed"}[30m])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_failed|restore_partial_cleanup"}[30m])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"dead_letter|dropped"}[30m])), "slo", "audit", "", "")
+        - record: capsule:slo:valid:rate30m
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event=~"create_completed|create_failed"}[30m])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event=~"boot_ready|boot_not_ready"}[30m])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"succeeded|failed|timed_out|not_completed"}[30m])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event=~"destroy_completed|destroy_failed"}[30m])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_completed|suspend_failed|suspend_timed_out"}[30m])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_completed|resume_failed|resume_timed_out"}[30m])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event=~"fork_completed|fork_failed"}[30m])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_completed|restore_failed|restore_partial_cleanup"}[30m])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"delivered|dead_letter|dropped"}[30m])), "slo", "audit", "", "")
+        - record: capsule:slo:bad:rate1h
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event="create_failed"}[1h])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event="boot_not_ready"}[1h])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"failed|timed_out|not_completed"}[1h])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event="destroy_failed"}[1h])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_failed|suspend_timed_out"}[1h])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_failed|resume_timed_out"}[1h])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event="fork_failed"}[1h])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_failed|restore_partial_cleanup"}[1h])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"dead_letter|dropped"}[1h])), "slo", "audit", "", "")
+        - record: capsule:slo:valid:rate1h
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event=~"create_completed|create_failed"}[1h])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event=~"boot_ready|boot_not_ready"}[1h])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"succeeded|failed|timed_out|not_completed"}[1h])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event=~"destroy_completed|destroy_failed"}[1h])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_completed|suspend_failed|suspend_timed_out"}[1h])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_completed|resume_failed|resume_timed_out"}[1h])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event=~"fork_completed|fork_failed"}[1h])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_completed|restore_failed|restore_partial_cleanup"}[1h])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"delivered|dead_letter|dropped"}[1h])), "slo", "audit", "", "")
+        - record: capsule:slo:bad:rate6h
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event="create_failed"}[6h])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event="boot_not_ready"}[6h])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"failed|timed_out|not_completed"}[6h])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event="destroy_failed"}[6h])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_failed|suspend_timed_out"}[6h])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_failed|resume_timed_out"}[6h])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event="fork_failed"}[6h])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_failed|restore_partial_cleanup"}[6h])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"dead_letter|dropped"}[6h])), "slo", "audit", "", "")
+        - record: capsule:slo:valid:rate6h
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event=~"create_completed|create_failed"}[6h])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event=~"boot_ready|boot_not_ready"}[6h])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"succeeded|failed|timed_out|not_completed"}[6h])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event=~"destroy_completed|destroy_failed"}[6h])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_completed|suspend_failed|suspend_timed_out"}[6h])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_completed|resume_failed|resume_timed_out"}[6h])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event=~"fork_completed|fork_failed"}[6h])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_completed|restore_failed|restore_partial_cleanup"}[6h])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"delivered|dead_letter|dropped"}[6h])), "slo", "audit", "", "")
+        - record: capsule:slo:bad:rate30d
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event="create_failed"}[30d])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event="boot_not_ready"}[30d])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"failed|timed_out|not_completed"}[30d])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event="destroy_failed"}[30d])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_failed|suspend_timed_out"}[30d])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_failed|resume_timed_out"}[30d])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event="fork_failed"}[30d])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_failed|restore_partial_cleanup"}[30d])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"dead_letter|dropped"}[30d])), "slo", "audit", "", "")
+        - record: capsule:slo:valid:rate30d
+          expr: |
+            label_replace(sum(rate(capsule_create_events_total{event=~"create_completed|create_failed"}[30d])), "slo", "create", "", "")
+            or label_replace(sum(rate(capsule_boot_events_total{event=~"boot_ready|boot_not_ready"}[30d])), "slo", "boot", "", "")
+            or label_replace(sum(rate(capsule_exec_events_total{event=~"succeeded|failed|timed_out|not_completed"}[30d])), "slo", "exec", "", "")
+            or label_replace(sum(rate(capsule_destroy_events_total{event=~"destroy_completed|destroy_failed"}[30d])), "slo", "destroy", "", "")
+            or label_replace(sum(rate(capsule_suspend_events_total{event=~"suspend_completed|suspend_failed|suspend_timed_out"}[30d])), "slo", "suspend", "", "")
+            or label_replace(sum(rate(capsule_resume_events_total{event=~"resume_completed|resume_failed|resume_timed_out"}[30d])), "slo", "resume", "", "")
+            or label_replace(sum(rate(capsule_fork_events_total{event=~"fork_completed|fork_failed"}[30d])), "slo", "fork", "", "")
+            or label_replace(sum(rate(capsule_restore_events_total{event=~"restore_completed|restore_failed|restore_partial_cleanup"}[30d])), "slo", "restore", "", "")
+            or label_replace(sum(rate(capsule_audit_delivery_count{outcome=~"delivered|dead_letter|dropped"}[30d])), "slo", "audit", "", "")
+        - record: capsule:slo:error_ratio:5m
+          expr: capsule:slo:bad:rate5m / capsule:slo:valid:rate5m
+        - record: capsule:slo:error_ratio:30m
+          expr: capsule:slo:bad:rate30m / capsule:slo:valid:rate30m
+        - record: capsule:slo:error_ratio:1h
+          expr: capsule:slo:bad:rate1h / capsule:slo:valid:rate1h
+        - record: capsule:slo:error_ratio:6h
+          expr: capsule:slo:bad:rate6h / capsule:slo:valid:rate6h
+        - record: capsule:slo:error_ratio:30d
+          expr: capsule:slo:bad:rate30d / capsule:slo:valid:rate30d
+        - record: capsule:slo:burn:5m
+          expr: |
+            capsule:slo:error_ratio:5m
+              / on(slo) group_left
+            (1 - capsule:slo:availability_target)
+        - record: capsule:slo:burn:30m
+          expr: |
+            capsule:slo:error_ratio:30m
+              / on(slo) group_left
+            (1 - capsule:slo:availability_target)
+        - record: capsule:slo:burn:1h
+          expr: |
+            capsule:slo:error_ratio:1h
+              / on(slo) group_left
+            (1 - capsule:slo:availability_target)
+        - record: capsule:slo:burn:6h
+          expr: |
+            capsule:slo:error_ratio:6h
+              / on(slo) group_left
+            (1 - capsule:slo:availability_target)
+        - record: capsule:slo:budget_remaining
+          expr: |
+            clamp_min(
+              1 - (
+                capsule:slo:error_ratio:30d
+                  / on(slo) group_left
+                (1 - capsule:slo:availability_target)
+              ),
+              0
+            )
+        - record: capsule:slo:error_rate:1h
+          expr: capsule:slo:error_ratio:1h
+        - record: capsule:slo:error_rate:30d
+          expr: capsule:slo:error_ratio:30d
+
+    - name: capsule.slo.alerts
+      rules:
+        - alert: CapsuleSloBurnFast
+          expr: |
+            capsule:slo:burn:1h > 14.4
+              and capsule:slo:burn:5m > 14.4
+              and capsule:slo:valid:rate5m > 0.01
+          for: 2m
+          labels:
+            severity: critical
+            category: slo_burn
+            owner: sre-capsule
+            runbook: docs/runbooks/slo-error-budget.md
+          annotations:
+            summary: "Fast SLO burn on {{ $labels.slo }}: {{ $value | humanize }}"
+            description: >
+              {{ $labels.slo }} is burning error budget more than 14.4x on both
+              the 1h and 5m windows. Freeze non-incident production rollouts in
+              the affected region. See docs/observability/slo-error-budget-policy.md
+              and jump to the owning lifecycle runbook.
+
+        - alert: CapsuleSloBurnSlow
+          expr: |
+            capsule:slo:burn:6h > 6
+              and capsule:slo:burn:30m > 6
+              and capsule:slo:valid:rate30m > 0.003
+          for: 15m
+          labels:
+            severity: warning
+            category: slo_burn
+            owner: sre-capsule
+            runbook: docs/runbooks/slo-error-budget.md
+          annotations:
+            summary: "Slow SLO burn on {{ $labels.slo }}: {{ $value | humanize }}"
+            description: >
+              {{ $labels.slo }} is burning error budget more than 6x on both the
+              6h and 30m windows. Ticket the owning team. No automatic freeze.
+              Review remaining 30d budget on capsule-slo-error-budget.
+
+        - alert: CapsuleSloBudgetExhausted
+          expr: capsule:slo:budget_remaining <= 0
+          for: 15m
+          labels:
+            severity: critical
+            category: slo_burn
+            owner: sre-capsule
+            runbook: docs/runbooks/slo-error-budget.md
+          annotations:
+            summary: "30d error budget exhausted for {{ $labels.slo }}"
+            description: >
+              {{ $labels.slo }} has no remaining 30-day error budget. Freeze all
+              non-incident production changes in the region until remaining
+              budget is above 10% or an exception is approved.
+
+        - alert: CapsuleSloTelemetryStale
+          expr: absent(capsule:slo:valid:rate5m)
+          for: 15m
+          labels:
+            severity: warning
+            category: telemetry_delivery_failure
+            owner: sre-capsule
+            runbook: docs/runbooks/audit-telemetry.md
+          annotations:
+            summary: "SLO recording series absent"
+            description: >
+              capsule:slo:valid:rate5m has no samples. Treat user-facing SLO
+              status as unknown, not healthy. Investigate the metrics pipeline
+              before using budget remaining for a rollout decision.
+
+    - name: capsule.quarantine
+      interval: 60s
+      rules:
+        - record: capsule:quarantine:alerts:fired:rate5m
+          expr: rate(capsule_quarantine_alerts_fired_total[5m])
+        - record: capsule:quarantine:alerts:resolved:rate5m
+          expr: rate(capsule_quarantine_alerts_resolved_total[5m])
+        - record: capsule:quarantine:hosts:active
+          expr: capsule_quarantine_hosts_quarantined
+        - record: capsule:quarantine:alerts:active
+          expr: capsule_quarantine_alerts_active
+
+    - name: capsule.quarantine.alerts
+      rules:
+        - alert: CapsuleHostQuarantined
+          expr: capsule_quarantine_hosts_quarantined > 0
+          for: 1m
+          labels:
+            severity: warning
+            owner: sre-capsule
+            runbook: docs/runbooks/host-quarantine.md
+          annotations:
+            summary: "Host(s) quarantined: {{ $value }}"
+            description: >
+              {{ $value }} host(s) are currently quarantined due to alert
+              conditions (repeated runtime failures, stale resources,
+              capacity reporting staleness, resource pressure, or
+              cleanup/reconciliation issues). Quarantined hosts are excluded
+              from new sandbox placement. Check the host-health dashboard
+              and quarantine alert details for root cause.
+
+        - alert: CapsuleHostAlertFiringRateHigh
+          expr: rate(capsule_quarantine_alerts_fired_total[5m]) > 1
+          for: 5m
+          labels:
+            severity: critical
+            owner: sre-capsule
+            runbook: docs/runbooks/host-quarantine.md
+          annotations:
+            summary: "High rate of quarantine alerts: {{ $value }}/s"
+            description: >
+              Quarantine alerts are firing at an elevated rate of {{ $value }}
+              per second. This may indicate a systemic issue across hosts.
+              Investigate the quarantine dashboard and verify that alert
+              conditions are not caused by a telemetry pipeline or
+              reconciliation infrastructure failure.
+
+        - alert: CapsuleHostUnresolvedAlerts
+          expr: capsule_quarantine_alerts_active > 5
+          for: 30m
+          labels:
+            severity: warning
+            owner: sre-capsule
+            runbook: docs/runbooks/host-quarantine.md
+          annotations:
+            summary: "{{ $value }} active unresolved quarantine alerts"
+            description: >
+              {{ $value }} quarantine alerts have been active for more than
+              30 minutes without resolution or acknowledgement. Review the
+              alert details and take action per the host quarantine runbook.
+
+    - name: capsule.placement.alerts
+      rules:
+        - alert: CapsuleCellCannotPlace
+          expr: |
+            (
+              sum by (cell, region) (rate(capsule_placement_hosts_evaluated_sum[5m])) > 0
+            )
+            and
+            (
+              sum by (cell, region) (rate(capsule_placement_hosts_passed_constraints_sum[5m])) == 0
+            )
+          for: 5m
+          labels:
+            severity: critical
+            category: capacity_exhaustion
+            owner: sre-capsule
+            runbook: docs/runbooks/scheduling-capacity.md
+          annotations:
+            summary: "Cell cannot place sandboxes: {{ $labels.cell }}"
+            description: >
+              Cell {{ $labels.cell }} in region {{ $labels.region }} is
+              evaluating hosts but none pass hard constraints for 5m.
+              New placement is shed. Existing sandboxes are unchanged.
+              Check scheduling-capacity (quarantine, efficiency) and treat
+              scheduler errors as backpressure, not retry.
+
+    - name: capsule.restore.alerts
+      rules:
+        - alert: CapsuleRestoreSaturated
+          expr: |
+            (
+              max(capsule:restore:latency:p99:rate5m) > 1
+            )
+            and
+            (
+              sum(rate(capsule_restore_events_total{event="restore_completed"}[5m])) > 0
+            )
+          for: 10m
+          labels:
+            severity: warning
+            category: capacity_exhaustion
+            owner: sre-capsule
+            runbook: docs/runbooks/snapshot-fork.md
+          annotations:
+            summary: "Restore p99 above SLO-RESTORE-LAT while restores complete"
+            description: >
+              Restore p99 has exceeded 1s for 10m while restore_completed
+              events are still flowing. Shed additional restore admission.
+              Check snapshot-fork (latency by snapshot_type and cache_tier)
+              and image-cache hit/miss. Do not raise max_concurrent_restores
+              without a CAP-65 report.
+        - alert: CapsuleRestorePartialCleanup
+          expr: sum(increase(capsule_restore_events_total{event="restore_partial_cleanup"}[5m])) > 0
+          labels:
+            severity: critical
+            category: regional_lifecycle_failure
+            owner: sre-capsule
+            runbook: docs/runbooks/snapshot-fork.md
+          annotations:
+            summary: "Partial restore cleanup is a bad restore event"
+            description: >
+              restore_partial_cleanup is firing. Treat it as a failed
+              restore. Do not reuse the workspace. Follow snapshot-fork
+              then cleanup-reconciliation.
+
+    - name: capsule.image.cache
+      interval: 60s
+      rules:
+        - record: capsule:image_cache:hit_rate5m
+          expr: |
+            sum(rate(capsule_image_cache_hits[5m]))
+            /
+            (sum(rate(capsule_image_cache_hits[5m])) + sum(rate(capsule_image_cache_misses[5m])))
+        - record: capsule:image_cache:miss:rate5m
+          expr: rate(capsule_image_cache_misses[5m])
+        - record: capsule:image_cache:eviction:rate5m
+          expr: rate(capsule_image_cache_evictions[5m])
+        - record: capsule:image_prepare:latency:p50:rate5m
+          expr: histogram_quantile(0.50, rate(capsule_image_prepare_latency_seconds_bucket[5m]))
+        - record: capsule:image_prepare:latency:p95:rate5m
+          expr: histogram_quantile(0.95, rate(capsule_image_prepare_latency_seconds_bucket[5m]))
+        - record: capsule:image_prepare:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_image_prepare_latency_seconds_bucket[5m]))
+        - record: capsule:image_prepare:latency:p99:hit:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_image_prepare_latency_seconds_bucket{cache_result="hit"}[5m]))
+        - record: capsule:image_verify:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_image_verify_latency_seconds_bucket[5m]))
+        - record: capsule:image_overlay:latency:p99:rate5m
+          expr: histogram_quantile(0.99, rate(capsule_image_overlay_latency_seconds_bucket[5m]))
+
+    - name: capsule.image.cache.alerts
+      rules:
+        - alert: CapsuleImageCacheHitRateLow
+          expr: |
+            (
+              capsule:image_cache:hit_rate5m < 0.8
+            )
+            and
+            (
+              (sum(rate(capsule_image_cache_hits[5m])) + sum(rate(capsule_image_cache_misses[5m]))) > 0
+            )
+          for: 15m
+          labels:
+            severity: warning
+            category: capacity_exhaustion
+            owner: sre-capsule
+            runbook: docs/runbooks/image-cache.md
+          annotations:
+            summary: "Image cache hit rate below 0.80"
+            description: >
+              Warm image-cache hit rate has stayed below 0.80 for 15m.
+              Misses may slow boot; they must not skip verification.
+              Check capsule-image-cache hit/miss/eviction. Do not copy
+              layers onto a host. Size from a CAP-66 report.
+        - alert: CapsuleImagePrepareSaturated
+          expr: |
+            (
+              max(capsule:image_prepare:latency:p99:hit:rate5m) > 1
+            )
+            and
+            (
+              sum(rate(capsule_image_cache_hits[5m])) > 0
+            )
+          for: 10m
+          labels:
+            severity: warning
+            category: regional_lifecycle_failure
+            owner: sre-capsule
+            runbook: docs/runbooks/image-cache.md
+          annotations:
+            summary: "Warm image prepare p99 above 1s while cache hits complete"
+            description: >
+              Image prepare p99 has exceeded 1s for 10m while cache hits
+              are still flowing. Check verify and overlay latency on
+              capsule-image-cache. Do not bypass signature checks.

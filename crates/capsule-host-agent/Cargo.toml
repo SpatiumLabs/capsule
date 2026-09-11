@@ -1,0 +1,52 @@
+[package]
+name = "capsule-host-agent"
+version = { workspace = true }
+edition = { workspace = true }
+description = "Orchestrates sandbox lifecycle on the compute host"
+
+[package.metadata.cargo-udeps.ignore]
+normal = ["sys-info"]
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+axum = { workspace = true }
+capsule-core = { workspace = true, features = ["secrets-http"] }
+capsule-guest-protocol = { workspace = true }
+capsule-network-agent = { workspace = true }
+capsule-observability = { workspace = true }
+capsule-runtime = { workspace = true }
+capsule-runtime-hardening = { workspace = true, features = ["ebpf-syscall-audit", "ebpf-file-integrity"] }
+capsule-sandboxd-proto = { workspace = true }
+capsule-seccomp = { workspace = true }
+capsule-telemetry = { workspace = true }
+hashbrown = { workspace = true }
+heapless = { workspace = true }
+libc = { workspace = true }
+opentelemetry = { workspace = true }
+parking_lot = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+ssh-key = { workspace = true }
+subtle = { workspace = true }
+sys-info = { workspace = true }
+thiserror = { workspace = true }
+time = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+toml = { workspace = true }
+tonic = { workspace = true }
+tower = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+ulid = { workspace = true }
+zeroize = { workspace = true, features = ["serde"] }
+
+[dev-dependencies]
+capsule-sandboxd = { workspace = true }
+reqwest = { workspace = true }
+sqlx = { workspace = true }
+tempfile = { workspace = true }

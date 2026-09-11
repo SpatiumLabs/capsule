@@ -1,0 +1,33 @@
+[package]
+name = "capsule-runtime"
+version = { workspace = true }
+edition = { workspace = true }
+description = "Runtime for the Capsule hypervisor"
+
+[dependencies]
+async-trait = { workspace = true }
+blake3 = { workspace = true }
+capsule-core = { workspace = true, features = ["mock-backend"] }
+capsule-guest-protocol = { workspace = true }
+capsule-network-agent = { workspace = true }
+capsule-runtime-hardening = { workspace = true }
+capsule-seccomp = { workspace = true }
+hashbrown = { workspace = true }
+libc = { workspace = true }
+parking_lot = { workspace = true }
+prost = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+ulid = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+aya = "0.14.0"
+
+[build-dependencies]
+capsule-core = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }

@@ -1,0 +1,30 @@
+[Unit]
+Description=Capsule sandboxd (privileged runtime supervisor)
+Documentation=https://github.com/tensora-ai/capsule
+After=network.target
+Requires=network.target
+
+[Service]
+Type=simple
+User=root
+Group=capsule
+Environment=CAPSULE_SANDBOXD_CONFIG=/etc/capsule/sandboxd.toml
+# Set CAPSULE_SANDBOXD_TOKEN via drop-in or EnvironmentFile (never commit secrets).
+EnvironmentFile=-/etc/capsule/sandboxd.env
+ExecStart=/usr/local/bin/sandboxd
+Restart=on-failure
+RestartSec=2
+LimitNOFILE=1048576
+# sandboxd holds runtime backends and guest sessions; do not kill mid-destroy.
+TimeoutStopSec=120
+KillMode=mixed
+
+# Hardening (interim; full capability drop is applied in-process via seccomp).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/capsule /var/run/capsule /run/capsule
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

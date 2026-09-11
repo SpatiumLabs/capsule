@@ -1,0 +1,8 @@
+[env]
+VM_USER = "your_vm_user"
+VM_HOST = "your_vm_ip"
+VM_INSTALL_PATH = "/home/your_vm_user/.local/bin/capsule-agent"
+SKIP_INSTALL = "false"
+CAPSULE_RUNTIME = "remote-firecracker"
+CAPSULE_GUEST_AGENT_ADDR = "your_vm_ip:your_vm_port"
+CAPSULE_REMOTE_SSH_USERNAME = "your_ssh_username"

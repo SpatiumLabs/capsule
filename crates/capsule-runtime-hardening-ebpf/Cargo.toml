@@ -1,0 +1,28 @@
+[package]
+name = "capsule-runtime-hardening-ebpf"
+version = "0.1.0"
+edition = "2024"
+description = "eBPF tracepoint and LSM probes for syscall audit and file integrity monitoring"
+
+[[bin]]
+name = "capsule-runtime-hardening-ebpf"
+path = "src/main.rs"
+
+[dependencies]
+aya-ebpf = "0.2.1"
+
+[package.metadata.cargo-udeps.ignore]
+development = ["capsule-runtime-hardening-ebpf"]
+
+[profile.dev]
+opt-level = 1
+debug = true
+panic = "abort"
+
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+panic = "abort"
+strip = "symbols"
+codegen-units = 1

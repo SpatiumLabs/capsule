@@ -1,0 +1,41 @@
+[[repos]]
+repo = "https://github.com/pre-commit/pre-commit-hooks"
+rev = "v6.0.0"
+hooks = [
+  { id = "check-toml" },
+  { id = "end-of-file-fixer" },
+  { id = "trailing-whitespace" },
+]
+
+[[repos]]
+repo = "https://github.com/est31/cargo-udeps"
+rev = "v0.1.47"
+hooks = [
+  { id = "udeps", args = ["--all-targets"] },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  {
+      id = "cargo-fmt-check",
+      name = "cargo fmt check",
+      entry = "cargo fmt --all -- --check",
+      language = "system",
+      types = ["rust"],
+      pass_filenames = false,
+  },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  {
+      id = "cargo-clippy-check",
+      name = "cargo clippy check",
+      entry = "cargo clippy --all-targets --all-features -- -D warnings",
+      language = "system",
+      types = ["rust"],
+      pass_filenames = false,
+  },
+]

@@ -1,0 +1,54 @@
+[package]
+name = "capsule-sandboxd"
+version = { workspace = true }
+edition = { workspace = true }
+description = "Durable local supervisor for Capsule sandbox runtimes"
+
+[[bin]]
+name = "sandboxd"
+path = "src/main.rs"
+
+[features]
+default = []
+# Test-only: lets the sandboxd binary serve MockBackend-driven sandboxes when
+# CAPSULE_SANDBOXD_MOCK_GUEST_ADDR and CAPSULE_SANDBOXD_ALLOW_MOCK=1 are set.
+# Used by the binary-level restart acceptance tests on runners without
+# KVM/Firecracker assets. Production builds never enable this feature, and the
+# dual-key requirement prevents a release artifact with the feature from being
+# switched to mock mode by a single env var.
+mock-backend = []
+
+[dependencies]
+anyhow = { workspace = true }
+capsule-core = { workspace = true }
+capsule-guest-protocol = { workspace = true }
+capsule-network-agent = { workspace = true }
+capsule-runtime = { workspace = true }
+capsule-sandboxd-proto = { workspace = true }
+capsule-seccomp = { workspace = true }
+capsule-telemetry = { workspace = true }
+hashbrown = { workspace = true }
+heapless = { workspace = true }
+libc = { workspace = true }
+parking_lot = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+subtle = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tokio-util = { workspace = true }
+tokio-vsock = { workspace = true }
+toml = { workspace = true }
+tonic = { workspace = true }
+tower = { workspace = true }
+tracing = { workspace = true }
+ulid = { workspace = true }
+
+[dev-dependencies]
+async-trait = { workspace = true }
+tempfile = { workspace = true }
+tokio-stream = { workspace = true, features = ["sync"] }

@@ -1,0 +1,30 @@
+[package]
+name = "capsule-cli"
+version = { workspace = true }
+edition = { workspace = true }
+description = "CLI for managing Capsule sandboxes"
+
+[[bin]]
+name = "capsule"
+path = "src/main.rs"
+
+[dependencies]
+camino = { workspace = true }
+capsule-core = { workspace = true }
+capsule-image = { workspace = true }
+capsule-telemetry = { workspace = true }
+clap = { workspace = true }
+futures-util = { workspace = true }
+http = { workspace = true }
+reqwest = { workspace = true }
+rustls = { workspace = true }
+rustls-native-certs = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt", "io-util", "net"] }
+tokio-tungstenite = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }
+
+[dev-dependencies]
