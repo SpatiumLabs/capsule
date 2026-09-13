@@ -16,33 +16,58 @@ impl WorkspaceManager {
     }
 
     pub fn sandbox_dir(&self, id: &str) -> Result<PathBuf, SandboxError> {
+        reject_traversal(id)?;
         validate_sandbox_id(id)?;
-        Ok(self.sandbox_dir_unchecked(id))
+        let dir = self.sandbox_dir_unchecked(id);
+        // Lexical containment: a validated id is a single path component,
+        // so the join must stay under the workspace root.
+        if !dir.starts_with(&self.root) {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
+        Ok(dir)
     }
 
     pub fn ensure(&self, id: &str) -> Result<PathBuf, SandboxError> {
+        reject_traversal(id)?;
         validate_sandbox_id(id)?;
         let dir = self.sandbox_dir_unchecked(id);
+        if !dir.starts_with(&self.root) {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
         std::fs::create_dir_all(&dir)?;
         Ok(dir)
     }
 
     pub fn resolve(&self, id: &str, requested: &str) -> Result<PathBuf, SandboxError> {
+        reject_traversal(id)?;
+        reject_traversal(requested)?;
         validate_sandbox_id(id)?;
         let path = Path::new(requested);
         if path.is_absolute() {
             return Err(SandboxError::PathEscape(requested.into()));
         }
-        if path
-            .components()
-            .any(|component| matches!(component, Component::ParentDir))
-        {
+        if path.components().any(|component| {
+            matches!(
+                component,
+                Component::ParentDir | Component::RootDir | Component::Prefix(_)
+            )
+        }) {
             return Err(SandboxError::PathEscape(requested.into()));
         }
-        Ok(self.sandbox_dir_unchecked(id).join(path))
+        let base = self.sandbox_dir_unchecked(id);
+        let joined = base.join(path);
+        // Lexical containment check keeps the resolved path under the
+        // sandbox directory even if a future component slips past the
+        // filter above.
+        if !joined.starts_with(&base) {
+            return Err(SandboxError::PathEscape(requested.into()));
+        }
+        Ok(joined)
     }
 
     pub fn resolve_existing(&self, id: &str, requested: &str) -> Result<PathBuf, SandboxError> {
+        reject_traversal(id)?;
+        reject_traversal(requested)?;
         let path = self.resolve(id, requested)?;
         self.require_workspace_exists(id)?;
         reject_symlink_chain(&path, requested)?;
@@ -50,6 +75,8 @@ impl WorkspaceManager {
     }
 
     pub fn resolve_for_write(&self, id: &str, requested: &str) -> Result<PathBuf, SandboxError> {
+        reject_traversal(id)?;
+        reject_traversal(requested)?;
         let path = self.resolve(id, requested)?;
         self.require_workspace_exists(id)?;
         reject_symlink_parents(&path, requested)?;
@@ -58,8 +85,12 @@ impl WorkspaceManager {
     }
 
     pub fn delete(&self, id: &str) -> Result<(), SandboxError> {
+        reject_traversal(id)?;
         validate_sandbox_id(id)?;
         let dir = self.sandbox_dir_unchecked(id);
+        if !dir.starts_with(&self.root) {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
         crate::fs_retry::retry_transient_fs_op(
             "workspace-delete",
             || match std::fs::remove_dir_all(&dir) {
@@ -72,6 +103,7 @@ impl WorkspaceManager {
     }
 
     fn require_workspace_exists(&self, id: &str) -> Result<(), SandboxError> {
+        reject_traversal(id)?;
         let dir = self.sandbox_dir_unchecked(id);
         let metadata = std::fs::symlink_metadata(&dir).map_err(|err| match err.kind() {
             std::io::ErrorKind::NotFound => SandboxError::WorkspaceNotFound(id.into()),
@@ -88,7 +120,34 @@ impl WorkspaceManager {
     }
 }
 
-fn validate_sandbox_id(id: &str) -> Result<(), SandboxError> {
+/// Rejects values that could traverse out of their parent directory.
+///
+/// This is intentionally a plain `contains("..")` check: static analysis
+/// (CodeQL `rust/path-injection`) only recognizes that spelling as a
+/// traversal guard, and every filesystem sink in this repo keeps an inline
+/// copy so the guard dominates the sink in the same function. The allowlist
+/// checks elsewhere remain the authoritative validation.
+///
+/// By design this also rejects harmless names that merely contain two
+/// adjacent dots (for example `file..txt`): fail closed rather than try to
+/// distinguish safe dot pairs from traversal sequences.
+pub fn reject_traversal(value: &str) -> Result<(), SandboxError> {
+    if value.contains("..") {
+        return Err(SandboxError::PathEscape(value.into()));
+    }
+    Ok(())
+}
+
+/// Validates a sandbox id against the workspace path rules.
+///
+/// Ids are `sbx_` plus ASCII alphanumerics and `_`, which guarantees each id
+/// is a single safe path component. Callers that join the id into a
+/// filesystem path must still keep an inline `reject_traversal` guard so the
+/// check dominates the sink.
+pub fn validate_sandbox_id(id: &str) -> Result<(), SandboxError> {
+    if id.contains("..") || id.contains('/') || id.contains('\\') {
+        return Err(SandboxError::PathEscape(id.into()));
+    }
     let Some(suffix) = id.strip_prefix("sbx_") else {
         return Err(SandboxError::BadRequest(format!(
             "invalid sandbox id: {id}"
@@ -197,7 +256,44 @@ mod tests {
     fn rejects_invalid_sandbox_id() {
         let ws = WorkspaceManager::new(tmp_root()).unwrap();
         let err = ws.resolve("../outside", "foo.txt").unwrap_err();
-        assert!(matches!(err, SandboxError::BadRequest(_)));
+        assert!(matches!(err, SandboxError::PathEscape(_)));
+    }
+
+    #[test]
+    fn rejects_dotdot_sandbox_id() {
+        let ws = WorkspaceManager::new(tmp_root()).unwrap();
+        for id in ["sbx_..", "sbx_a..b", "..", "sbx_a/b", "sbx_a\\b"] {
+            let err = ws.sandbox_dir(id).unwrap_err();
+            assert!(
+                matches!(
+                    err,
+                    SandboxError::PathEscape(_) | SandboxError::BadRequest(_)
+                ),
+                "id {id} must be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_dotdot_requested_path() {
+        let ws = WorkspaceManager::new(tmp_root()).unwrap();
+        for requested in ["..", "../x", "a/../b", "a/..\\b", "..\\x"] {
+            let err = ws.resolve("sbx_x", requested).unwrap_err();
+            assert!(
+                matches!(err, SandboxError::PathEscape(_)),
+                "path {requested} must be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn delete_rejects_traversal_id() {
+        let ws = WorkspaceManager::new(tmp_root()).unwrap();
+        let err = ws.delete("sbx_../escape").unwrap_err();
+        assert!(matches!(
+            err,
+            SandboxError::PathEscape(_) | SandboxError::BadRequest(_)
+        ));
     }
 
     #[test]

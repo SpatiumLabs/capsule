@@ -754,7 +754,7 @@ impl HostAgent {
                 guest_boot_id: ParkingLotMutex::new(None),
                 session_id: ParkingLotMutex::new(None),
                 shared_secret: Some(Zeroizing::new(Vec::from(shared_secret.as_slice()))),
-                cgroup: CgroupManager::new(&id),
+                cgroup: CgroupManager::new(&id)?,
                 credential_request,
             });
             self.sandboxes
@@ -1356,6 +1356,16 @@ impl HostAgent {
             .filter_map(|target| u16::try_from(target.guest_port).ok())
             .filter(|port| *port > 0)
             .collect();
+        // Fail closed on ledger rows with ids that cannot name a cgroup
+        // directory; rehydrating them would resurrect unmanageable entries.
+        // Log so invalid rows are distinguishable from destroyed skips.
+        let Some(cgroup) = CgroupManager::new(&id).ok() else {
+            tracing::warn!(
+                sandbox_id = %id,
+                "skipping rehydrate for ledger row with invalid sandbox id"
+            );
+            return None;
+        };
         Some(SandboxEntry {
             id: id.clone(),
             runtime,
@@ -1400,7 +1410,7 @@ impl HostAgent {
             // The handshake shared secret is derivable from the sandbox id,
             // but only boot-owned entries keep it in memory.
             shared_secret: None,
-            cgroup: CgroupManager::new(&id),
+            cgroup,
             credential_request: None,
         })
     }
@@ -1686,6 +1696,15 @@ impl HostAgent {
     /// Returns an error if the path escapes the workspace, is missing, is a
     /// directory, or cannot be read as UTF-8 text.
     pub async fn file_read(&self, id: &str, path: &str) -> Result<FileReadResponse> {
+        // Inline traversal guards: WorkspaceManager validates too, but the
+        // check must dominate the filesystem sinks in this function for
+        // static analysis (CodeQL rust/path-injection) to recognize it.
+        if id.contains("..") {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
+        if path.contains("..") {
+            return Err(SandboxError::PathEscape(path.into()));
+        }
         let full = self.workspaces.resolve_existing(id, path)?;
         let meta = tokio::fs::metadata(&full)
             .await
@@ -1722,6 +1741,14 @@ impl HostAgent {
     /// Returns an error if the path escapes the workspace or the file cannot be
     /// created, appended, or overwritten.
     pub async fn file_write(&self, id: &str, req: FileWriteRequest) -> Result<FileInfo> {
+        // Inline traversal guards (see file_read): the check must dominate
+        // the filesystem sinks in this function.
+        if id.contains("..") {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
+        if req.path.contains("..") {
+            return Err(SandboxError::PathEscape(req.path.clone()));
+        }
         let full = self.workspaces.resolve_for_write(id, &req.path)?;
         if let Some(parent) = full.parent() {
             tokio::fs::create_dir_all(parent).await?;
@@ -1759,6 +1786,14 @@ impl HostAgent {
     /// Returns an error if the directory escapes the workspace, is missing, is
     /// not a directory, or cannot be read.
     pub async fn file_list(&self, id: &str, dir: &str, recursive: bool) -> Result<Vec<FileInfo>> {
+        // Inline traversal guards (see file_read): the check must dominate
+        // the filesystem sinks in this function.
+        if id.contains("..") {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
+        if dir.contains("..") {
+            return Err(SandboxError::PathEscape(dir.into()));
+        }
         let root = self.workspaces.resolve_existing(id, dir)?;
         let meta = tokio::fs::metadata(&root)
             .await
@@ -3103,6 +3138,12 @@ fn error_to_lifecycle_outcome(err: &SandboxError) -> LifecycleOutcome {
 }
 
 async fn collect_cgroup_stats(sandbox_id: &str) {
+    // A malicious id must not escape /sys/fs/cgroup/sandbox via `..`.
+    // The sandbox id allowlist forbids dots entirely; this explicit guard
+    // is what static analysis (CodeQL rust/path-injection) recognizes.
+    if sandbox_id.contains("..") || sandbox_id.contains('/') || sandbox_id.contains('\\') {
+        return;
+    }
     let current_path = std::path::PathBuf::from("/sys/fs/cgroup/sandbox").join(sandbox_id);
     if let Ok(val) = std::fs::read_to_string(current_path.join("memory.current"))
         && let Ok(bytes) = val.trim().parse::<u64>()

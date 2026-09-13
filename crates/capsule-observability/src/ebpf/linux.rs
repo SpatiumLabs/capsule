@@ -296,6 +296,13 @@ impl ObservabilityBackend for EbpfObservabilityBackend {
     }
 
     fn poll_memory(&self, sandbox_id: &str) -> Result<MemorySnapshot, ObservabilityError> {
+        // A malicious id must not escape /sys/fs/cgroup/sandbox via `..`.
+        // The explicit `contains` guard is what static analysis recognizes.
+        if sandbox_id.contains("..") || sandbox_id.contains('/') || sandbox_id.contains('\\') {
+            return Err(ObservabilityError::Unavailable(format!(
+                "invalid sandbox id: {sandbox_id}"
+            )));
+        }
         let cgroup_path = Path::new("/sys/fs/cgroup/sandbox").join(sandbox_id);
 
         let current_bytes = read_cgroup_u64(&cgroup_path, "memory.current")?;

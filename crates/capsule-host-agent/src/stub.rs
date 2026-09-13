@@ -253,6 +253,14 @@ impl capsule_core::SandboxFacade for StubAgent {
     }
 
     async fn file_read(&self, id: &str, path: &str) -> Result<FileReadResponse> {
+        // Inline traversal guards: the check must dominate the filesystem
+        // sinks in this function for static analysis to recognize it.
+        if id.contains("..") {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
+        if path.contains("..") {
+            return Err(SandboxError::PathEscape(path.into()));
+        }
         let full = self.workspaces.resolve_existing(id, path)?;
         let content = tokio::fs::read_to_string(&full).await?;
         let meta = tokio::fs::metadata(&full).await?;
@@ -264,6 +272,13 @@ impl capsule_core::SandboxFacade for StubAgent {
         })
     }
     async fn file_write(&self, id: &str, req: FileWriteRequest) -> Result<FileInfo> {
+        // Inline traversal guards (see file_read).
+        if id.contains("..") {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
+        if req.path.contains("..") {
+            return Err(SandboxError::PathEscape(req.path.clone()));
+        }
         let full = self.workspaces.resolve_for_write(id, &req.path)?;
         if let Some(parent) = full.parent() {
             tokio::fs::create_dir_all(parent).await?;
@@ -286,6 +301,13 @@ impl capsule_core::SandboxFacade for StubAgent {
         })
     }
     async fn file_list(&self, id: &str, dir: &str, recursive: bool) -> Result<Vec<FileInfo>> {
+        // Inline traversal guards (see file_read).
+        if id.contains("..") {
+            return Err(SandboxError::PathEscape(id.into()));
+        }
+        if dir.contains("..") {
+            return Err(SandboxError::PathEscape(dir.into()));
+        }
         let root = self.workspaces.resolve_existing(id, dir)?;
         let sandbox_root = self.workspaces.sandbox_dir(id)?;
         let mut out = Vec::new();
@@ -295,8 +317,13 @@ impl capsule_core::SandboxFacade for StubAgent {
             let mut entries = tokio::fs::read_dir(&current).await?;
             while let Some(entry) = entries.next_entry().await? {
                 let path = entry.path();
-                let meta = entry.metadata().await?;
-                let is_dir = meta.is_dir();
+                // Never follow symlinks: a symlinked directory must be
+                // listed, not descended into, or listing escapes the
+                // workspace when recursive.
+                let meta = tokio::fs::symlink_metadata(&path).await?;
+                let file_type = meta.file_type();
+                let is_symlink = file_type.is_symlink();
+                let is_dir = meta.is_dir() && !is_symlink;
                 let rel = path
                     .strip_prefix(&sandbox_root)
                     .unwrap_or(&path)

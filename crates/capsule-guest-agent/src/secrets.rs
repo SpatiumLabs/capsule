@@ -113,6 +113,14 @@ fn validate_credential_name(name: &str) -> Result<(), SecretsError> {
     if name.is_empty() {
         return Err(SecretsError::InvalidName("empty name".into()));
     }
+    // Explicit traversal guard: the allowlist below already rejects dots
+    // outside safe positions, but static analysis only recognizes this
+    // spelling as a path-injection sanitizer.
+    if name.contains("..") {
+        return Err(SecretsError::InvalidName(format!(
+            "name contains parent reference: {name}"
+        )));
+    }
     if name.len() > MAX_CREDENTIAL_NAME_LEN {
         return Err(SecretsError::InvalidName(format!(
             "name exceeds {MAX_CREDENTIAL_NAME_LEN} bytes: {} bytes",

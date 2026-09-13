@@ -36,7 +36,7 @@ mod imp {
 
     use crate::cgroups::{format_cpu_list, parse_memory_pressure};
     use crate::types::{CpuBandwidth, IoLimit};
-    use crate::{Result, SandboxError};
+    use crate::{Result, SandboxError, validate_sandbox_id};
     use tracing::{debug, warn};
 
     const CGROUP_BASE: &str = "/sys/fs/cgroup/sandbox";
@@ -47,12 +47,21 @@ mod imp {
     }
 
     impl CgroupManager {
-        #[must_use]
-        pub fn new(sandbox_id: &str) -> Self {
-            Self {
+        /// Creates a manager for one sandbox cgroup directory.
+        ///
+        /// The id is validated against the workspace path rules so a
+        /// malicious id cannot escape `/sys/fs/cgroup/sandbox` via `..`
+        /// components. The explicit `contains("..")` guard doubles as the
+        /// traversal check static analysis recognizes.
+        pub fn new(sandbox_id: &str) -> Result<Self> {
+            if sandbox_id.contains("..") {
+                return Err(SandboxError::PathEscape(sandbox_id.into()));
+            }
+            validate_sandbox_id(sandbox_id)?;
+            Ok(Self {
                 base_path: PathBuf::from(CGROUP_BASE),
                 sandbox_id: sandbox_id.to_string(),
-            }
+            })
         }
 
         pub fn sandbox_path(&self) -> PathBuf {
@@ -317,6 +326,7 @@ mod imp {
 
     use crate::Result;
     use crate::types::{CpuBandwidth, IoLimit};
+    use crate::validate_sandbox_id;
 
     pub struct CgroupManager {
         _base_path: PathBuf,
@@ -324,12 +334,17 @@ mod imp {
     }
 
     impl CgroupManager {
-        #[must_use]
-        pub fn new(sandbox_id: &str) -> Self {
-            Self {
+        /// Creates a non-Linux stub manager. The id is validated like the
+        /// Linux implementation so invalid ids fail closed on every platform.
+        pub fn new(sandbox_id: &str) -> Result<Self> {
+            if sandbox_id.contains("..") {
+                return Err(crate::SandboxError::PathEscape(sandbox_id.into()));
+            }
+            validate_sandbox_id(sandbox_id)?;
+            Ok(Self {
                 _base_path: PathBuf::from("/sys/fs/cgroup/sandbox"),
                 _sandbox_id: sandbox_id.to_string(),
-            }
+            })
         }
 
         pub fn setup(
@@ -458,7 +473,7 @@ mod tests {
 
     #[test]
     fn cgroup_manager_has_deterministic_path() {
-        let mgr = CgroupManager::new("sbx_test123");
+        let mgr = CgroupManager::new("sbx_test123").unwrap();
         #[cfg(target_os = "linux")]
         {
             let path = mgr.sandbox_path();
@@ -471,7 +486,17 @@ mod tests {
 
     #[test]
     fn cgroup_manager_id_is_preserved() {
-        let _mgr = CgroupManager::new("sbx_abc");
+        let _mgr = CgroupManager::new("sbx_abc").unwrap();
+    }
+
+    #[test]
+    fn cgroup_manager_rejects_traversal_id() {
+        for id in ["../escape", "sbx_..", "sbx_a/b", "sbx_a\\b", "evil"] {
+            assert!(
+                CgroupManager::new(id).is_err(),
+                "cgroup id {id} must be rejected"
+            );
+        }
     }
 
     #[test]

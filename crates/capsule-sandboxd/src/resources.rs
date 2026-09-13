@@ -290,7 +290,16 @@ impl HostResourceManager {
             }
         }
 
-        let cgroup = CgroupManager::new(&sandbox_id);
+        let cgroup = match CgroupManager::new(&sandbox_id) {
+            Ok(cgroup) => cgroup,
+            Err(err) => {
+                return Err(HostResourceError {
+                    message: format!("invalid cgroup id for {sandbox_id}: {err}"),
+                    rollback: self.teardown(workspaces, &sandbox_id),
+                    created,
+                });
+            }
+        };
         if let Err(err) = cgroup.setup(
             config.memory_limit_bytes,
             config.memory_soft_limit_bytes,
@@ -509,7 +518,18 @@ impl HostResourceManager {
     /// hardening measure; the process still runs if the write fails (for
     /// example when the cgroup was already torn down).
     pub(crate) fn attach_process(&self, sandbox_id: &str, pid: u32) {
-        let cgroup = CgroupManager::new(sandbox_id);
+        let cgroup = match CgroupManager::new(sandbox_id) {
+            Ok(cgroup) => cgroup,
+            Err(err) => {
+                tracing::warn!(
+                    pid = pid,
+                    sandbox_id = %sandbox_id,
+                    error = %err,
+                    "invalid cgroup id, skipping process attachment"
+                );
+                return;
+            }
+        };
         // Skip silently when the hierarchy is already gone (teardown raced
         // exec); avoid string-matching io errors to classify NotFound.
         if !cgroup.exists() {
@@ -562,6 +582,7 @@ impl HostResourceManager {
     /// controller directories are removed, not only the leaf directory.
     pub(crate) fn cleanup_cgroup(&self, sandbox_id: &str) -> Result<(), String> {
         CgroupManager::new(sandbox_id)
+            .map_err(|err| format!("invalid cgroup id {sandbox_id}: {err}"))?
             .cleanup()
             .map_err(|err| format!("failed to remove cgroup {sandbox_id}: {err}"))
     }

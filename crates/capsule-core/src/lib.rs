@@ -65,6 +65,7 @@ pub use scheduler::*;
 pub use snapshot::*;
 pub use tenant::*;
 pub use types::*;
+pub use workspace::{reject_traversal, validate_sandbox_id};
 
 #[cfg(any(test, feature = "mock-backend"))]
 pub mod mock;

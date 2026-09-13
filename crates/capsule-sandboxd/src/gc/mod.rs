@@ -21,7 +21,7 @@ use tracing::{debug, error, info, warn};
 use crate::ledger::{CpuReceiptRow, GcScanRow, Ledger};
 use crate::resources::{HostResourceManager, parse_cpu_receipt};
 use crate::supervisor::SupervisorError;
-use capsule_core::CORE_METRICS;
+use capsule_core::{CORE_METRICS, validate_sandbox_id};
 
 /// Default interval between garbage collection scans.
 pub(crate) const DEFAULT_GC_INTERVAL: Duration = Duration::from_secs(300);
@@ -564,6 +564,20 @@ impl GarbageCollector {
     // ── Workspace helpers ──
 
     fn inspect_workspace(&self, sandbox_id: &str) -> OrphanFinding {
+        // Explicit traversal guard so a hostile ledger row can never turn
+        // the join/metadata below into a path escape. The `contains` check
+        // is what static analysis recognizes; the allowlist rejects the
+        // rest (`/`, `\`, absolute paths, wrong prefix). Invalid ids stay
+        // requires_review instead of being auto-removed.
+        if sandbox_id.contains("..") || validate_sandbox_id(sandbox_id).is_err() {
+            return OrphanFinding {
+                sandbox_id: Some(sandbox_id.to_string()),
+                resource_class: ResourceClass::Workspace,
+                resource_name: sandbox_id.to_string(),
+                evidence: format!("invalid sandbox id: {sandbox_id}"),
+                safe_to_remove: false,
+            };
+        }
         let path = self.workspace_root.join(sandbox_id);
         match std::fs::metadata(&path) {
             Ok(metadata) if metadata.is_dir() => OrphanFinding {
@@ -605,6 +619,12 @@ impl GarbageCollector {
         sandbox_id: &str,
         finding: &OrphanFinding,
     ) -> (GcAction, Option<String>) {
+        if sandbox_id.contains("..") || validate_sandbox_id(sandbox_id).is_err() {
+            return (
+                GcAction::RequiresReview,
+                Some(format!("invalid sandbox id: {sandbox_id}")),
+            );
+        }
         if !finding.safe_to_remove {
             return self
                 .unsafe_path_outcome(&self.workspace_root.join(sandbox_id), &finding.evidence);
@@ -630,6 +650,9 @@ impl GarbageCollector {
     }
 
     fn remove_workspace(&self, sandbox_id: &str) -> Result<(), String> {
+        if sandbox_id.contains("..") || validate_sandbox_id(sandbox_id).is_err() {
+            return Err(format!("invalid sandbox id: {sandbox_id}"));
+        }
         let existed = self.workspace_root.join(sandbox_id).exists();
         self.host_resources
             .delete_workspace_dir(sandbox_id)
@@ -643,6 +666,16 @@ impl GarbageCollector {
     // ── Cgroup helpers ──
 
     fn inspect_cgroup(&self, sandbox_id: &str) -> OrphanFinding {
+        // Explicit traversal guard (see inspect_workspace).
+        if sandbox_id.contains("..") || validate_sandbox_id(sandbox_id).is_err() {
+            return OrphanFinding {
+                sandbox_id: Some(sandbox_id.to_string()),
+                resource_class: ResourceClass::Cgroup,
+                resource_name: sandbox_id.to_string(),
+                evidence: format!("invalid sandbox id: {sandbox_id}"),
+                safe_to_remove: false,
+            };
+        }
         let path = self.cgroup_base_path.join(sandbox_id);
         match std::fs::metadata(&path) {
             Ok(metadata) if metadata.is_dir() => OrphanFinding {
@@ -684,6 +717,12 @@ impl GarbageCollector {
         sandbox_id: &str,
         finding: &OrphanFinding,
     ) -> (GcAction, Option<String>) {
+        if sandbox_id.contains("..") || validate_sandbox_id(sandbox_id).is_err() {
+            return (
+                GcAction::RequiresReview,
+                Some(format!("invalid sandbox id: {sandbox_id}")),
+            );
+        }
         if !finding.safe_to_remove {
             return self
                 .unsafe_path_outcome(&self.cgroup_base_path.join(sandbox_id), &finding.evidence);
@@ -726,6 +765,9 @@ impl GarbageCollector {
     }
 
     fn remove_cgroup(&self, sandbox_id: &str) -> Result<(), String> {
+        if sandbox_id.contains("..") || validate_sandbox_id(sandbox_id).is_err() {
+            return Err(format!("invalid sandbox id: {sandbox_id}"));
+        }
         let existed = self.cgroup_base_path.join(sandbox_id).exists();
         self.host_resources.cleanup_cgroup(sandbox_id).map(|()| {
             if existed {
