@@ -1,46 +1,46 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
-  "crates/capsule-api",
-  "crates/capsule-cli",
-  "crates/capsule-core",
-  "crates/capsule-edge",
-  "crates/capsule-guest-agent",
-  "crates/capsule-guest-protocol",
-  "crates/capsule-host-agent",
-  "crates/capsule-image",
-  "crates/capsule-network-agent",
-  "crates/capsule-observability",
-  "crates/capsule-runtime",
-  "crates/capsule-runtime-hardening",
-  "crates/capsule-sandboxd",
-  "crates/capsule-sandboxd-proto",
-  "crates/capsule-seccomp",
-  "crates/capsule-telemetry",
+    "crates/capsule-api",
+    "crates/capsule-cli",
+    "crates/capsule-core",
+    "crates/capsule-edge",
+    "crates/capsule-guest-agent",
+    "crates/capsule-guest-protocol",
+    "crates/capsule-host-agent",
+    "crates/capsule-image",
+    "crates/capsule-network-agent",
+    "crates/capsule-observability",
+    "crates/capsule-runtime",
+    "crates/capsule-runtime-hardening",
+    "crates/capsule-sandboxd",
+    "crates/capsule-sandboxd-proto",
+    "crates/capsule-seccomp",
+    "crates/capsule-telemetry",
 ]
 exclude = [
-  "crates/capsule-network-agent-ebpf",
-  "crates/capsule-observability-ebpf",
-  "crates/capsule-runtime-hardening-ebpf",
-  "crates/capsule-snapshot-ebpf",
+    "crates/capsule-network-agent-ebpf",
+    "crates/capsule-observability-ebpf",
+    "crates/capsule-runtime-hardening-ebpf",
+    "crates/capsule-snapshot-ebpf",
 ]
 default-members = [
-  "crates/capsule-api",
-  "crates/capsule-cli",
-  "crates/capsule-core",
-  "crates/capsule-edge",
-  "crates/capsule-guest-agent",
-  "crates/capsule-guest-protocol",
-  "crates/capsule-host-agent",
-  "crates/capsule-image",
-  "crates/capsule-network-agent",
-  "crates/capsule-observability",
-  "crates/capsule-runtime",
-  "crates/capsule-runtime-hardening",
-  "crates/capsule-sandboxd",
-  "crates/capsule-sandboxd-proto",
-  "crates/capsule-seccomp",
-  "crates/capsule-telemetry",
+    "crates/capsule-api",
+    "crates/capsule-cli",
+    "crates/capsule-core",
+    "crates/capsule-edge",
+    "crates/capsule-guest-agent",
+    "crates/capsule-guest-protocol",
+    "crates/capsule-host-agent",
+    "crates/capsule-image",
+    "crates/capsule-network-agent",
+    "crates/capsule-observability",
+    "crates/capsule-runtime",
+    "crates/capsule-runtime-hardening",
+    "crates/capsule-sandboxd",
+    "crates/capsule-sandboxd-proto",
+    "crates/capsule-seccomp",
+    "crates/capsule-telemetry",
 ]
 
 [workspace.package]
@@ -82,43 +82,29 @@ futures-util = "0.3.34"
 hashbrown = { version = "0.17.1", features = ["serde"] }
 heapless = { version = "0.9.3", features = ["serde"] }
 hickory-proto = "0.26.3"
-hickory-resolver = {
-  version = "0.26.3",
-  default-features = false,
-  features = [
+hickory-resolver = { version = "0.26.3", default-features = false, features = [
     "system-config",
     "tls-ring",
     "tokio",
-  ]
-}
-hickory-server = {
-  version = "0.26.3",
-  default-features = false,
-  features = [
+] }
+hickory-server = { version = "0.26.3", default-features = false, features = [
     "resolver",
-  ]
-}
+] }
 http = "1.5.0"
 libc = "0.2.189"
 metrics = "0.24.6"
-nix = {
-  version = "0.31.3",
-  features = [
+nix = { version = "0.31.3", features = [
     "net",
     "process",
     "resource",
     "sched",
     "user",
-  ]
-}
+] }
 opentelemetry = "0.32.0"
-opentelemetry-otlp = {
-  version = "0.32.0",
-  features = [
+opentelemetry-otlp = { version = "0.32.0", features = [
     "grpc-tonic",
     "metrics",
-  ]
-}
+] }
 opentelemetry_sdk = { version = "0.32.1", features = ["rt-tokio"] }
 parking_lot = "0.12.5"
 process_control = "5.2.0"
@@ -134,17 +120,14 @@ seccompiler = { version = "0.5.0", features = ["json"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.0"
-sqlx = {
-  version = "0.9",
-  features = [
+sqlx = { version = "0.9", features = [
     "chrono",
     "postgres",
     "runtime-tokio",
     "sqlite",
     "tls-rustls",
     "uuid",
-  ]
-}
+] }
 ssh-key = { version = "0.6.7", features = ["default", "ed25519", "getrandom"] }
 strum = { version = "0.28.0", features = ["derive"] }
 subtle = "2.6.1"
@@ -152,9 +135,7 @@ sys-info = "0.9.1"
 tempfile = "3.27.0"
 thiserror = "2.0.20"
 time = { version = "0.3.55", features = ["formatting", "macros", "parsing", "serde"] }
-tokio = {
-  version = "1.53.1",
-  features = [
+tokio = { version = "1.53.1", features = [
     "fs",
     "io-util",
     "macros",
@@ -165,8 +146,7 @@ tokio = {
     "signal",
     "sync",
     "time",
-  ]
-}
+] }
 tokio-stream = { version = "0.1.19", features = ["sync"] }
 tokio-tungstenite = { version = "0.30.0", features = ["__rustls-tls"] }
 tokio-util = "0.7.19"
